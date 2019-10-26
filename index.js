@@ -139,16 +139,126 @@ function addEmployees(){
                     choices: function(){
                         var choicesArr = [];
                         for (let i = 0; i < results.length; i++){
-                            choicesArr.push(results[i].name);
+                            choicesArr.push(results[i].title);
                         }
                         return choicesArr;
                     }
+                    
                 }
             ]).then(function(answer){
-                console.log(answer);
+                
+                let firstname = answer["first-name"];
+                let lastname = answer["last-name"];
+
+                let titleChoice = answer.choice;
+               
+                connection.query("SELECT id FROM role WHERE title = ?", titleChoice, function(err,results){
+                    if (err) throw err;
+                    
+                    let roleId = results[0].id;
+                    connection.query("INSERT INTO employee SET ?", 
+                    {
+                        first_name: firstname,
+                        last_name: lastname,
+                        role_id: roleId
+                    },
+                    function(err){
+                        if (err) throw err;
+                        runSearch();
+                    }
+                    )
+                   
+                });
+                
+
             }).catch (function (err){
                 console.log(err);
             })
     });
     
+}
+
+function removeEmployee(){
+    connection.query("SELECT * FROM employee", function(err, results){
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: "choice",
+                    message: "Choose an employee to remove",
+                    type: "rawlist",
+                    choices: function(){
+                        var choicesArr = [];
+                        for (let i = 0; i < results.length; i++){
+                            choicesArr.push({name: results[i].first_name + " " + results[i].last_name, value: results[i]} );
+                        }
+                        return choicesArr;
+                    }
+                    
+                }
+            ]).then(function(answer){
+                console.log(answer);
+                let employeeId = answer.choice.id;
+                console.log(employeeId);
+                connection.query("DELETE FROM employee WHERE id = ?", employeeId, function (err,results){
+                    if (err) throw err;
+                    runSearch();
+                })
+            })
+        
+    });
+}
+function updateRole(){
+    connection.query("SELECT * FROM employee", function(err, results){
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    name: "choice",
+                    message: "Choose an employee to update",
+                    type: "rawlist",
+                    choices: function(){
+                        var choicesArr = [];
+                        for (let i = 0; i < results.length; i++){
+                            choicesArr.push({name: results[i].first_name + " " + results[i].last_name, value: results[i]} );
+                        }
+                        return choicesArr;
+                    }
+                    
+                }
+            ]).then(function(answer){
+                console.log(answer);
+                let employeeId = answer.choice.id;
+                console.log(employeeId);
+                connection.query("SELECT * FROM role", function(err, results){
+                    if (err) throw err;
+                    inquirer
+                        .prompt([
+                            {
+                                name: "choice",
+                                type: "rawlist",
+                                message: "Choose a role to update to: ",
+                                choices: function(){
+                                    var choicesArr = [];
+                                    for (let i = 0; i < results.length; i++){
+                                     choicesArr.push({name: results[i].title, value: results[i]})
+                                    }
+                                return choicesArr;
+                                }
+                            }
+                        ]).then(function(answer){
+                            console.log(answer);
+                            let roleChoice = answer.choice.id;
+                            console.log(roleChoice);
+                            connection.query("UPDATE employee SET role_id = ? WHERE id = ?", [roleChoice, employeeId], function(err,results){
+                                if (err) throw err;
+                                runSearch();
+                            })
+                        })
+                })
+                
+            })
+        
+    });
+
 }
